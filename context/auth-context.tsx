@@ -1,3 +1,5 @@
+"use client";
+
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
@@ -17,6 +19,8 @@ import {
 } from "react";
 import { auth } from "../fireconfig";
 
+export type UserRole = "tenant" | "broker";
+
 type AuthUser = {
   email: string;
   displayName?: string;
@@ -27,6 +31,7 @@ type AuthContextValue = {
   isAuthenticated: boolean;
   user: AuthUser | null;
   isLoading: boolean;
+  role: UserRole | null;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (
     email: string,
@@ -34,6 +39,7 @@ type AuthContextValue = {
     displayName: string
   ) => Promise<void>;
   logout: () => Promise<void>;
+  setRoleForSession: (role: UserRole) => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -41,6 +47,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [role, setRole] = useState<UserRole | null>(null);
 
   // Listen to Firebase auth state changes
   useEffect(() => {
@@ -89,6 +96,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     await signOut(auth);
     // User state will be updated by onAuthStateChanged listener
+    setRole(null);
+  }, []);
+
+  const setRoleForSession = useCallback((nextRole: UserRole) => {
+    setRole(nextRole);
   }, []);
 
   const value = useMemo(
@@ -96,11 +108,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: Boolean(user),
       user,
       isLoading,
+      role,
       signIn,
       signUp,
       logout,
+      setRoleForSession,
     }),
-    [user, isLoading, signIn, signUp, logout]
+    [user, isLoading, role, signIn, signUp, logout, setRoleForSession]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

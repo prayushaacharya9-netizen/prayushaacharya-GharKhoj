@@ -2,6 +2,9 @@ import { Redirect } from "expo-router";
 import { useState } from "react";
 import {
   Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
   StyleSheet,
   TextInput,
   TouchableOpacity,
@@ -14,8 +17,17 @@ import { useAuth } from "@/context/auth-context";
 import { useThemeColor } from "@/hooks/use-theme-color";
 
 export default function LandingScreen() {
-  const { isAuthenticated, signIn, signUp, isLoading: authLoading } = useAuth();
+  const {
+    isAuthenticated,
+    signIn,
+    signUp,
+    isLoading: authLoading,
+    setRoleForSession,
+  } = useAuth();
   const [mode, setMode] = useState<"login" | "signup">("login");
+  const [selectedRole, setSelectedRole] = useState<"tenant" | "broker">(
+    "tenant"
+  );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -86,6 +98,8 @@ export default function LandingScreen() {
       } else {
         await signUp(email.trim(), password, fullName.trim());
       }
+      // Store the selected role in the auth context for this session
+      setRoleForSession(selectedRole);
       // Navigation will happen automatically via onAuthStateChanged
     } catch (err: any) {
       // Handle Firebase auth errors
@@ -114,114 +128,162 @@ export default function LandingScreen() {
 
   return (
     <SafeAreaView style={[styles.safeArea, dynamicStyles.safeArea]}>
-      <View style={styles.inner}>
-        <View style={styles.hero}>
-          <Image
-            source={{
-              uri: "https://raw.githubusercontent.com/pramit101/fridge_front/main/assets/images/Gemini_Generated_Image_1p6kbm1p6kbm1p6k.png",
-            }}
-            style={styles.logo}
-          />
-          <Text style={styles.title}>
-            {mode === "login" ? "Welcome" : "Create an account"}
-          </Text>
-          <Text style={[styles.subtitle, dynamicStyles.subtitle]}>
-            {mode === "login"
-              ? "Sign in to access your dashboard and continue where you left off."
-              : "Sign up to sync your progress securely across devices."}
-          </Text>
-        </View>
-
-        <View style={styles.form}>
-          {mode === "signup" && (
-            <View style={styles.field}>
-              <Text style={styles.label}>Full name</Text>
-              <TextInput
-                placeholder="Jane Doe"
-                placeholderTextColor={inputPlaceholder}
-                style={[styles.input, dynamicStyles.input]}
-                value={fullName}
-                onChangeText={setFullName}
-                autoCapitalize="words"
-                returnKeyType="next"
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoiding}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 85 : 0}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.inner}>
+            <View style={styles.hero}>
+              <Image
+                source={{
+                  uri: "https://raw.githubusercontent.com/pramit101/fridge_front/main/assets/images/Gemini_Generated_Image_1p6kbm1p6kbm1p6k.png",
+                }}
+                style={styles.logo}
               />
+              <Text style={styles.title}>
+                {mode === "login" ? "Welcome" : "Create an account"}
+              </Text>
+              <Text style={[styles.subtitle, dynamicStyles.subtitle]}>
+                {mode === "login"
+                  ? "Sign in to access your dashboard and continue where you left off."
+                  : "Sign up to sync your progress securely across devices."}
+              </Text>
             </View>
-          )}
 
-          <View style={styles.field}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              placeholder="you@example.com"
-              placeholderTextColor={inputPlaceholder}
-              style={[styles.input, dynamicStyles.input]}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              returnKeyType="next"
-            />
+            {/* Role selector */}
+            <View style={styles.roleSwitch}>
+              <TouchableOpacity
+                style={[
+                  styles.roleOption,
+                  selectedRole === "tenant" && styles.roleOptionActive,
+                ]}
+                onPress={() => setSelectedRole("tenant")}
+              >
+                <Text
+                  style={[
+                    styles.roleOptionText,
+                    selectedRole === "tenant" && styles.roleOptionTextActive,
+                  ]}
+                >
+                  I&apos;m a tenant
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.roleOption,
+                  selectedRole === "broker" && styles.roleOptionActive,
+                ]}
+                onPress={() => setSelectedRole("broker")}
+              >
+                <Text
+                  style={[
+                    styles.roleOptionText,
+                    selectedRole === "broker" && styles.roleOptionTextActive,
+                  ]}
+                >
+                  I&apos;m a broker
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.form}>
+              {mode === "signup" && (
+                <View style={styles.field}>
+                  <Text style={styles.label}>Full name</Text>
+                  <TextInput
+                    placeholder="Jane Doe"
+                    placeholderTextColor={inputPlaceholder}
+                    style={[styles.input, dynamicStyles.input]}
+                    value={fullName}
+                    onChangeText={setFullName}
+                    autoCapitalize="words"
+                    returnKeyType="next"
+                  />
+                </View>
+              )}
+
+              <View style={styles.field}>
+                <Text style={styles.label}>Email</Text>
+                <TextInput
+                  placeholder="you@example.com"
+                  placeholderTextColor={inputPlaceholder}
+                  style={[styles.input, dynamicStyles.input]}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  returnKeyType="next"
+                />
+              </View>
+
+              <View style={styles.field}>
+                <Text style={styles.label}>Password</Text>
+                <TextInput
+                  placeholder="••••••••"
+                  placeholderTextColor={inputPlaceholder}
+                  style={[styles.input, dynamicStyles.input]}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  returnKeyType="done"
+                />
+              </View>
+
+              {error ? (
+                <Text style={[styles.error, dynamicStyles.error]}>{error}</Text>
+              ) : null}
+
+              <TouchableOpacity
+                style={[
+                  styles.primaryButton,
+                  dynamicStyles.primaryButton,
+                  (isLoading || authLoading) && styles.primaryButtonDisabled,
+                ]}
+                onPress={handleAuth}
+                disabled={isLoading || authLoading}
+              >
+                <Text
+                  style={[
+                    styles.primaryButtonText,
+                    dynamicStyles.primaryButtonText,
+                  ]}
+                >
+                  {isLoading || authLoading
+                    ? "Please wait..."
+                    : mode === "login"
+                    ? "Log in"
+                    : "Create account"}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.secondaryButton}
+                onPress={() =>
+                  setMode((prev) => (prev === "login" ? "signup" : "login"))
+                }
+              >
+                <Text
+                  style={[
+                    styles.secondaryButtonText,
+                    dynamicStyles.secondaryButtonText,
+                  ]}
+                >
+                  {mode === "login"
+                    ? "Don't have an account? Sign up"
+                    : "Already have an account? Log in"}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-
-          <View style={styles.field}>
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              placeholder="••••••••"
-              placeholderTextColor={inputPlaceholder}
-              style={[styles.input, dynamicStyles.input]}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              returnKeyType="done"
-            />
-          </View>
-
-          {error ? (
-            <Text style={[styles.error, dynamicStyles.error]}>{error}</Text>
-          ) : null}
-
-          <TouchableOpacity
-            style={[
-              styles.primaryButton,
-              dynamicStyles.primaryButton,
-              (isLoading || authLoading) && styles.primaryButtonDisabled,
-            ]}
-            onPress={handleAuth}
-            disabled={isLoading || authLoading}
-          >
-            <Text
-              style={[
-                styles.primaryButtonText,
-                dynamicStyles.primaryButtonText,
-              ]}
-            >
-              {isLoading || authLoading
-                ? "Please wait..."
-                : mode === "login"
-                ? "Log in"
-                : "Create account"}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={() =>
-              setMode((prev) => (prev === "login" ? "signup" : "login"))
-            }
-          >
-            <Text
-              style={[
-                styles.secondaryButtonText,
-                dynamicStyles.secondaryButtonText,
-              ]}
-            >
-              {mode === "login"
-                ? "Don't have an account? Sign up"
-                : "Already have an account? Log in"}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -229,6 +291,12 @@ export default function LandingScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+  },
+  keyboardAvoiding: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   inner: {
     flex: 1,
@@ -260,6 +328,30 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: 12,
+  },
+  roleSwitch: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  roleOption: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(148, 163, 184, 0.6)",
+    alignItems: "center",
+  },
+  roleOptionActive: {
+    backgroundColor: "rgba(99,102,241,0.15)",
+    borderColor: "#6366f1",
+  },
+  roleOptionText: {
+    fontSize: 14,
+  },
+  roleOptionTextActive: {
+    fontWeight: "600",
   },
   field: {
     gap: 6,

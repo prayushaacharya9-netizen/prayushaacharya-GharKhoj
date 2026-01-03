@@ -1,0 +1,21 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "backend for the FPY project - GharKhoj",
+  "license": "ISC",
+  "author": "prayusha acharya",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "expo-image-picker": "~17.0.10",
+    "express": "^5.2.1",
+    "firebase-admin": "^13.6.0",
+    "multer": "^2.0.2",
+    "pg": "^8.16.3"
+  }
+}
