@@ -1,5 +1,6 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Image } from "expo-image";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
 
@@ -8,6 +9,7 @@ import { ThemedView } from "@/components/themed-view";
 import { useThemeColor } from "@/hooks/use-theme-color";
 
 export type HouseCardProps = {
+  id: number;
   image: string[];
   name: string;
   description: string;
@@ -19,6 +21,7 @@ export type HouseCardProps = {
 };
 
 export default function HouseCard({
+  id,
   image,
   name,
   description,
@@ -40,67 +43,78 @@ export default function HouseCard({
   const next = () => setIndex((prev) => (prev + 1) % image.length);
   const prev = () =>
     setIndex((prev) => (prev - 1 + image.length) % image.length);
+  const router = useRouter();
 
   const CardContent = (
-    <ThemedView
-      style={[
-        styles.card,
-        { backgroundColor: cardBackground, borderColor: cardBorder },
-      ]}
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() =>
+        router.push({
+          pathname: "/listing/[id]",
+          params: { id: id.toString() },
+        } as any)
+      }
     >
-      {/* Image carousel */}
-      <View>
-        <Image
-          source={
-            imageUri ? { uri: imageUri } : require("@/assets/images/icon.png")
-          }
-          style={styles.image}
-          contentFit="cover"
-        />
+      <ThemedView
+        style={[
+          styles.card,
+          { backgroundColor: cardBackground, borderColor: cardBorder },
+        ]}
+      >
+        {/* Image carousel */}
+        <View>
+          <Image
+            source={
+              imageUri ? { uri: imageUri } : require("@/assets/images/icon.png")
+            }
+            style={styles.image}
+            contentFit="cover"
+          />
 
-        {image.length > 1 && (
-          <>
-            <TouchableOpacity style={styles.left} onPress={prev}>
-              <Text style={styles.arrow}>‹</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.right} onPress={next}>
-              <Text style={styles.arrow}>›</Text>
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
-
-      {/* Content */}
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.name} numberOfLines={1}>
-            {name}
-          </Text>
-          <Text style={[styles.rent, { color: primaryButton }]}>
-            ₹{monthlyRent.toLocaleString()}/mo
-          </Text>
+          {image.length > 1 && (
+            <>
+              <TouchableOpacity style={styles.left} onPress={prev}>
+                <Text style={styles.arrow}>‹</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.right} onPress={next}>
+                <Text style={styles.arrow}>›</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
 
-        <View style={styles.locationRow}>
-          <MaterialIcons name="location-on" size={16} color={iconColor} />
-          <Text style={[styles.location, { color: secondaryText }]}>
-            {location}
+        {/* Content */}
+        <View style={styles.content}>
+          <View style={styles.header}>
+            <Text style={styles.name} numberOfLines={1}>
+              {name}
+            </Text>
+            <Text style={[styles.rent, { color: primaryButton }]}>
+              ₹{monthlyRent.toLocaleString()}/mo
+            </Text>
+          </View>
+
+          <View style={styles.locationRow}>
+            <MaterialIcons name="location-on" size={16} color={iconColor} />
+            <Text style={[styles.location, { color: secondaryText }]}>
+              {location}
+            </Text>
+          </View>
+
+          <Text
+            style={[styles.description, { color: secondaryText }]}
+            numberOfLines={2}
+          >
+            {description}
           </Text>
-        </View>
 
-        <Text
-          style={[styles.description, { color: secondaryText }]}
-          numberOfLines={2}
-        >
-          {description}
-        </Text>
-
-        <View style={styles.features}>
-          <Text>{beds} beds</Text>
-          <Text>{baths} baths</Text>
+          <View style={styles.features}>
+            <Text>{beds} beds</Text>
+            <Text>{baths} baths</Text>
+          </View>
         </View>
-      </View>
-    </ThemedView>
+      </ThemedView>
+    </TouchableOpacity>
   );
 
   if (onPress) {

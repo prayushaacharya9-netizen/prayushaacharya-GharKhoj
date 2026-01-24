@@ -5,6 +5,7 @@ import { ThemedView } from "@/components/themed-view";
 import { useAuth } from "@/context/auth-context";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import * as ImagePicker from "expo-image-picker";
+import * as Location from "expo-location";
 import { Redirect } from "expo-router";
 import { User, getAuth } from "firebase/auth";
 import { useEffect, useState } from "react";
@@ -17,25 +18,16 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import MapView, { Marker } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-interface ListingResponse {
-  id: number; // Primary key of the listing
-  broker_id: string; // Foreign key to broker
-  title: string;
-  description: string;
-  location: string;
-  rent: number;
-  beds: number;
-  baths: number;
-  created_at: string; // Timestamp string from PostgreSQL
-}
 
 type Listing = {
   id: number;
   title: string;
   description: string;
   location: string;
+  latitude: number;
+  longitude: number;
   rent: number;
   beds: number;
   baths: number;
@@ -48,7 +40,6 @@ export default function HomeScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [location, setLocation] = useState("");
   const [rent, setRent] = useState("");
   const [bed, setBed] = useState("");
   const [bath, setBath] = useState("");
@@ -56,6 +47,13 @@ export default function HomeScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const [listings, setListings] = useState<Listing[]>([]);
+
+  const [mapRegion, setMapRegion] = useState<any>(null);
+  const [selectedCoords, setSelectedCoords] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+  const [location, setLocation] = useState<string>("");
 
   const auth = getAuth();
   const inputBackground = useThemeColor({}, "inputBackground");
@@ -68,7 +66,20 @@ export default function HomeScreen() {
   const { role } = useAuth();
   const isBroker = role === "broker";
 
-  const formData = new FormData();
+  useEffect(() => {
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") return;
+
+      const loc = await Location.getCurrentPositionAsync({});
+      setMapRegion({
+        latitude: loc.coords.latitude,
+        longitude: loc.coords.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      });
+    })();
+  }, []);
 
   // Fetch the user and ID token
   useEffect(() => {
@@ -114,6 +125,11 @@ export default function HomeScreen() {
   if (!user) return <Redirect href="/" />;
 
   async function submitListing() {
+    const formData = new FormData();
+    if (!selectedCoords) {
+      alert("Please select a location on the map");
+      return;
+    }
     const listingRes: Response = await fetch(
       "http://192.168.0.48:3000/listing",
       {
@@ -126,18 +142,23 @@ export default function HomeScreen() {
           title: title,
           description: description,
           location: location,
-          rent: rent,
-          bed: bed,
-          bath: bath,
+          rent: Number(rent),
+          bed: Number(bed),
+          bath: Number(bath),
+          latitude: Number(selectedCoords.latitude),
+          longitude: Number(selectedCoords.longitude),
         }),
       }
     );
     try {
       if (!listingRes.ok) {
-        throw new Error(`Failed to create listing: ${listingRes.statusText}`);
+        const errorText = await listingRes.text();
+        throw new Error(
+          `Failed to create listing: ${listingRes.status} - ${errorText}`
+        );
       }
 
-      const listing: ListingResponse = await listingRes.json();
+      const listing: Listing = await listingRes.json();
 
       formData.append("listingId", listing.id.toString());
 
@@ -230,45 +251,35 @@ export default function HomeScreen() {
                 textAlignVertical="top"
                 onChangeText={setDescription}
               />
-              <Text style={styles.label}>Location</Text>{" "}
-              <TextInput
-                style={styles.input}
-                placeholder="Neighborhood, city"
-                placeholderTextColor={inputPlaceholder}
-                onChangeText={setLocation}
-              />{" "}
-              <Text style={styles.label}>Monthly rent (USD)</Text>{" "}
+              <Text style={styles.label}>Monthly rent (USD)</Text>
               <TextInput
                 style={styles.input}
                 placeholder="e.g. 2200"
                 placeholderTextColor={inputPlaceholder}
                 keyboardType="numeric"
                 onChangeText={setRent}
-              />{" "}
+              />
               <View style={styles.row}>
-                {" "}
                 <View style={styles.rowItem}>
-                  {" "}
-                  <Text style={styles.label}>Beds</Text>{" "}
+                  <Text style={styles.label}>Beds</Text>
                   <TextInput
                     style={styles.input}
                     placeholder="e.g. 2"
                     placeholderTextColor={inputPlaceholder}
                     keyboardType="numeric"
                     onChangeText={setBed}
-                  />{" "}
-                </View>{" "}
+                  />
+                </View>
                 <View style={styles.rowItem}>
-                  {" "}
-                  <Text style={styles.label}>Baths</Text>{" "}
+                  <Text style={styles.label}>Baths</Text>
                   <TextInput
                     style={styles.input}
                     placeholder="e.g. 1"
                     placeholderTextColor={inputPlaceholder}
                     keyboardType="numeric"
                     onChangeText={setBath}
-                  />{" "}
-                </View>{" "}
+                  />
+                </View>
               </View>
               <Text style={styles.label}>Image</Text>
               <View style={styles.ImageContainer}>
@@ -297,6 +308,46 @@ export default function HomeScreen() {
                     : "No images selected"}
                 </Text>
               </View>
+              <Text style={styles.label}>Select location on map</Text>
+              {location !== "" && (
+                <Text style={styles.locationPreview}>
+                  You selected: {location}
+                </Text>
+              )}
+              <View style={styles.mapContainer}>
+                {mapRegion && (
+                  <MapView
+                    style={styles.map}
+                    initialRegion={mapRegion}
+                    onPress={async (e) => {
+                      const { latitude, longitude } = e.nativeEvent.coordinate;
+                      setSelectedCoords({ latitude, longitude });
+
+                      const places = await Location.reverseGeocodeAsync({
+                        latitude,
+                        longitude,
+                      });
+
+                      if (places.length > 0) {
+                        const place = places[0];
+
+                        const readable = [
+                          place.name,
+                          place.street,
+                          place.city,
+                          place.region,
+                        ]
+                          .filter(Boolean)
+                          .join(", ");
+
+                        setLocation(readable);
+                      }
+                    }}
+                  >
+                    {selectedCoords && <Marker coordinate={selectedCoords} />}
+                  </MapView>
+                )}
+              </View>
               <TouchableOpacity
                 style={[
                   styles.submitButton,
@@ -324,6 +375,7 @@ export default function HomeScreen() {
             {listings.map((listing) => (
               <HouseCard
                 key={listing.id}
+                id={listing.id}
                 image={listing.images.map(
                   (img) => `http://192.168.0.48:3000${img}`
                 )}
@@ -393,5 +445,19 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontWeight: "bold",
     color: "white",
+  },
+  mapContainer: {
+    height: 250,
+    borderRadius: 12,
+    overflow: "hidden",
+    marginTop: 10,
+  },
+  map: {
+    flex: 1,
+  },
+  locationPreview: {
+    marginTop: 8,
+    fontSize: 14,
+    color: "#666",
   },
 });

@@ -5,10 +5,13 @@ import { pool } from "./db.js";
 import admin from "./firebase.js";
 import { upload } from "./multer.js";
 
+
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+async function startServer(){
 
 const result = await pool.query('SELECT current_database(), current_schema();');
 console.log(result.rows);
@@ -62,6 +65,8 @@ app.get("/", (req, res) => {
   });
 
   app.post("/listing", async (req, res) => {
+    console.log("Received body:", req.body);
+    console.log("Authorization header:", req.headers.authorization);
     try {
       const authHeader = req.headers.authorization;
       if (!authHeader) {
@@ -72,25 +77,25 @@ app.get("/", (req, res) => {
       const decoded = await admin.auth().verifyIdToken(token);
   
       const brokerId = decoded.uid;
-      const { title, description, location, rent, bed, bath } = req.body;
+      const { title, description, location, rent, bed, bath, latitude, longitude } = req.body;
 
       if (!title || !location || !rent) {
         return res.status(400).json({ error: "Missing required fields" });
       }
 
-  
       const result = await pool.query(
         `
-        INSERT INTO listings (broker_id, title, description, location, rent, beds, baths)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        INSERT INTO listings (broker_id, title, description, location, rent, beds, baths, latitude, longitude)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         RETURNING *
         `,
-        [brokerId, title, description, location, rent, bed, bath]
+        [brokerId, title, description, location, rent, bed, bath, latitude, longitude]
       );
   
       res.status(201).json(result.rows[0]);
     } catch (err) {
       console.error("Create listing error:", err);
+      console.log(err);
       res.status(500).json({ error: "Failed to create listing" });
     }
   });
@@ -146,6 +151,8 @@ app.get("/", (req, res) => {
           l.rent,
           l.beds,
           l.baths,
+          l.latitude,
+          l.longitude,
           l.created_at,
           COALESCE(
             array_agg(li.image_url) FILTER (WHERE li.image_url IS NOT NULL),
@@ -167,3 +174,8 @@ app.get("/", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+}
+
+startServer().catch(err => {
+  console.error("Server failed to start:", err);
+});;
