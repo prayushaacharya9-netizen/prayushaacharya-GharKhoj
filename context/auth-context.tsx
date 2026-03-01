@@ -1,5 +1,5 @@
 "use client";
-
+import { router } from "expo-router";
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
@@ -36,7 +36,7 @@ type AuthContextValue = {
   signUp: (
     email: string,
     password: string,
-    displayName: string
+    displayName: string,
   ) => Promise<void>;
   logout: () => Promise<void>;
   setRoleForSession: (role: UserRole) => void;
@@ -64,15 +64,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(null);
         }
         setIsLoading(false);
-      }
+      },
     );
 
-    return unsubscribe; // Cleanup subscription on unmount
+    return unsubscribe;
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
     await signInWithEmailAndPassword(auth, email, password);
-    // User state will be updated by onAuthStateChanged listener
   }, []);
 
   const signUp = useCallback(
@@ -80,23 +79,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
-        password
+        password,
       );
-      // Update the user's profile with display name
       if (displayName.trim()) {
         await updateProfile(userCredential.user, {
           displayName: displayName.trim(),
         });
       }
-      // User state will be updated by onAuthStateChanged listener
     },
-    []
+    [],
   );
 
   const logout = useCallback(async () => {
     await signOut(auth);
-    // User state will be updated by onAuthStateChanged listener
     setRole(null);
+    router.replace({ pathname: "/(auth)" });
   }, []);
 
   const setRoleForSession = useCallback((nextRole: UserRole) => {
@@ -114,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       setRoleForSession,
     }),
-    [user, isLoading, role, signIn, signUp, logout, setRoleForSession]
+    [user, isLoading, role, signIn, signUp, logout, setRoleForSession],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -122,10 +119,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 }

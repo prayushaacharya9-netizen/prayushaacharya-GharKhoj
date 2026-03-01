@@ -2,11 +2,11 @@
 import HouseCard from "@/components/house-card";
 import { Text } from "@/components/text";
 import { ThemedView } from "@/components/themed-view";
+import { IP } from "@/constants/config";
 import { useAuth } from "@/context/auth-context";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
-import { Redirect } from "expo-router";
 import { User, getAuth } from "firebase/auth";
 import { useEffect, useState } from "react";
 import {
@@ -23,6 +23,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 type Listing = {
   id: number;
+  broker_id: string;
   title: string;
   description: string;
   location: string;
@@ -96,7 +97,7 @@ export default function HomeScreen() {
 
       // Register broker if needed
       if (isBroker) {
-        fetch("http://192.168.0.48:3000/brokers/register", {
+        fetch(`http://${IP}:3000/brokers/register`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -112,7 +113,7 @@ export default function HomeScreen() {
 
   useEffect(() => {
     const fetchListings = async () => {
-      const res = await fetch(`http://192.168.0.48:3000/listings`);
+      const res = await fetch(`http://${IP}:3000/listings`);
       const data = await res.json();
       setListings(data);
     };
@@ -122,7 +123,7 @@ export default function HomeScreen() {
 
   if (isLoading) return null;
 
-  if (!user) return <Redirect href="/" />;
+  if (!user) return null;
 
   async function submitListing() {
     const formData = new FormData();
@@ -130,31 +131,28 @@ export default function HomeScreen() {
       alert("Please select a location on the map");
       return;
     }
-    const listingRes: Response = await fetch(
-      "http://192.168.0.48:3000/listing",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}`,
-        },
-        body: JSON.stringify({
-          title: title,
-          description: description,
-          location: location,
-          rent: Number(rent),
-          bed: Number(bed),
-          bath: Number(bath),
-          latitude: Number(selectedCoords.latitude),
-          longitude: Number(selectedCoords.longitude),
-        }),
-      }
-    );
+    const listingRes: Response = await fetch(`http://${IP}:3000/listing`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${idToken}`,
+      },
+      body: JSON.stringify({
+        title: title,
+        description: description,
+        location: location,
+        rent: Number(rent),
+        bed: Number(bed),
+        bath: Number(bath),
+        latitude: Number(selectedCoords.latitude),
+        longitude: Number(selectedCoords.longitude),
+      }),
+    });
     try {
       if (!listingRes.ok) {
         const errorText = await listingRes.text();
         throw new Error(
-          `Failed to create listing: ${listingRes.status} - ${errorText}`
+          `Failed to create listing: ${listingRes.status} - ${errorText}`,
         );
       }
 
@@ -170,13 +168,10 @@ export default function HomeScreen() {
         } as any);
       });
 
-      const uploadRes = await fetch(
-        "http://192.168.0.48:3000/upload-multiple",
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
+      const uploadRes = await fetch(`http://${IP}:3000/upload-multiple`, {
+        method: "POST",
+        body: formData,
+      });
 
       if (!uploadRes.ok) throw new Error("Upload failed");
       console.log("Images uploaded successfully");
@@ -376,9 +371,7 @@ export default function HomeScreen() {
               <HouseCard
                 key={listing.id}
                 id={listing.id}
-                image={listing.images.map(
-                  (img) => `http://192.168.0.48:3000${img}`
-                )}
+                image={listing.images.map((img) => `http://${IP}:3000${img}`)}
                 name={listing.title}
                 description={listing.description}
                 location={listing.location}

@@ -1,4 +1,4 @@
-import { Redirect } from "expo-router";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   Image,
@@ -18,7 +18,6 @@ import { useThemeColor } from "@/hooks/use-theme-color";
 
 export default function LandingScreen() {
   const {
-    isAuthenticated,
     signIn,
     signUp,
     isLoading: authLoading,
@@ -60,9 +59,8 @@ export default function LandingScreen() {
     secondaryButtonText: { color: secondaryButtonText },
   };
 
-  if (isAuthenticated) {
-    return <Redirect href="/(tabs)" />;
-  }
+  const router = useRouter();
+  if (authLoading) return null;
 
   const handleAuth = async () => {
     // Validate inputs
@@ -100,7 +98,8 @@ export default function LandingScreen() {
       }
       // Store the selected role in the auth context for this session
       setRoleForSession(selectedRole);
-      // Navigation will happen automatically via onAuthStateChanged
+      // Navigate to the tabs layout after successful auth
+      router.replace("/(tabs)");
     } catch (err: any) {
       // Handle Firebase auth errors
       let errorMessage = "An error occurred. Please try again.";

@@ -1,16 +1,14 @@
-import { useState } from "react";
-import { StyleSheet, TouchableOpacity } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-
 import { Text } from "@/components/text";
 import { ThemedView } from "@/components/themed-view";
 import { useAuth } from "@/context/auth-context";
 import { useThemeColor } from "@/hooks/use-theme-color";
+import { useState } from "react";
+import { StyleSheet, TouchableOpacity } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function SettingsScreen() {
   const { logout, user } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-
   const cardBackground = useThemeColor({}, "cardBackground");
   const secondaryText = useThemeColor({}, "secondaryText");
   const errorColor = useThemeColor({}, "error");
@@ -19,7 +17,6 @@ export default function SettingsScreen() {
     setIsLoggingOut(true);
     try {
       await logout();
-      // Navigation will happen automatically via onAuthStateChanged
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
