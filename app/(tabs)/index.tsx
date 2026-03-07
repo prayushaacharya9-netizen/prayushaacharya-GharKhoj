@@ -107,6 +107,17 @@ export default function HomeScreen() {
             name: currentUser.displayName,
           }),
         });
+      } else {
+        fetch(`http://${IP}:3000/users/register`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            name: currentUser.displayName,
+          }),
+        });
       }
     });
   }, []);
@@ -392,7 +403,7 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   title: { fontSize: 28, fontWeight: "bold", padding: 20, textAlign: "center" },
   scrollView: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 20 },
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 10 },
   form: { gap: 12, paddingTop: 8 },
   label: { fontSize: 14, fontWeight: "500" },
   input: {

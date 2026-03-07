@@ -130,9 +130,7 @@ export default function HouseCard({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 16,
     overflow: "hidden",
-    borderWidth: 3,
     marginBottom: 16,
     shadowColor: "#000",
     shadowOpacity: 0.4,

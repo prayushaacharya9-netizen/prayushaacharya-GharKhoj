@@ -4,8 +4,8 @@ import { useLocalSearchParams } from "expo-router";
 import { getAuth } from "firebase/auth";
 import { useEffect, useState } from "react";
 import {
-  Button,
   FlatList,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Text,
@@ -23,7 +23,12 @@ type Message = {
 };
 
 export default function ChatScreen() {
-  const { conversationId } = useLocalSearchParams<{ conversationId: string }>();
+  const { conversationId, name, uri, title } = useLocalSearchParams<{
+    conversationId: string;
+    name: string;
+    uri: string;
+    title: string;
+  }>();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const auth = getAuth();
@@ -83,72 +88,117 @@ export default function ChatScreen() {
   }, [conversationId]);
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#f5f5f5" }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
+        keyboardVerticalOffset={80}
       >
-        <View style={{ flex: 1 }}>
-          <FlatList
-            data={messages}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={{ padding: 10 }}
-            renderItem={({ item }) => {
-              const currentUid = auth.currentUser?.uid;
-              const isMine = item.sender_uid === currentUid;
-
-              return (
-                <View
-                  style={{
-                    width: "100%",
-                    marginBottom: 10,
-                    alignItems: isMine ? "flex-end" : "flex-start",
-                  }}
-                >
-                  <View
-                    style={{
-                      backgroundColor: isMine ? "#007AFF" : "#E5E5EA",
-                      paddingVertical: 8,
-                      paddingHorizontal: 12,
-                      borderRadius: 18,
-                      maxWidth: "75%",
-                    }}
-                  >
-                    <Text style={{ color: isMine ? "white" : "black" }}>
-                      {item.text}
-                    </Text>
-                  </View>
-                </View>
-              );
+        <View
+          style={{
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 12,
+            backgroundColor: "white",
+            borderBottomWidth: 1,
+            borderColor: "#eee",
+          }}
+        >
+          <Text style={{ fontWeight: "600", fontSize: 16 }}>{title}</Text>
+          <Image
+            source={uri ? { uri: uri } : require("@/assets/images/icon.png")}
+            style={{
+              width: 70,
+              height: 70,
+              borderRadius: 25,
+              margin: 10,
+              marginRight: 10,
             }}
           />
 
-          {/* Input area */}
+          <Text style={{ color: "#666", fontSize: 13 }}>
+            Chatting with: {name}
+          </Text>
+        </View>
+
+        <FlatList
+          data={messages}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ padding: 12 }}
+          style={{ flex: 1 }}
+          renderItem={({ item }) => {
+            const currentUid = auth.currentUser?.uid;
+            const isMine = item.sender_uid === currentUid;
+
+            return (
+              <View
+                style={{
+                  marginBottom: 10,
+                  alignItems: isMine ? "flex-end" : "flex-start",
+                }}
+              >
+                <View
+                  style={{
+                    backgroundColor: isMine ? "#007AFF" : "white",
+                    paddingVertical: 8,
+                    paddingHorizontal: 12,
+                    borderRadius: 18,
+                    maxWidth: "75%",
+                    shadowColor: "#000",
+                    shadowOpacity: 0.05,
+                    shadowRadius: 2,
+                    elevation: 1,
+                  }}
+                >
+                  <Text
+                    style={{ color: isMine ? "white" : "black", fontSize: 15 }}
+                  >
+                    {item.text}
+                  </Text>
+                </View>
+              </View>
+            );
+          }}
+        />
+        <View
+          style={{
+            flexDirection: "row",
+            padding: 10,
+            backgroundColor: "white",
+            borderTopWidth: 1,
+            borderColor: "#eee",
+          }}
+        >
+          <TextInput
+            value={input}
+            onChangeText={setInput}
+            placeholder="Type a message..."
+            style={{
+              flex: 1,
+              backgroundColor: "#f2f2f2",
+              borderRadius: 20,
+              paddingHorizontal: 14,
+              paddingVertical: 10,
+              marginRight: 8,
+              fontSize: 15,
+            }}
+          />
+
           <View
             style={{
-              flexDirection: "row",
-              padding: 10,
-              borderTopWidth: 1,
-              borderColor: "#ddd",
-              backgroundColor: "white",
+              backgroundColor: "#007AFF",
+              borderRadius: 20,
+              paddingHorizontal: 16,
+              justifyContent: "center",
             }}
           >
-            <TextInput
-              value={input}
-              onChangeText={setInput}
-              placeholder="Type message..."
-              style={{
-                flex: 1,
-                borderWidth: 1,
-                borderColor: "#ccc",
-                borderRadius: 20,
-                paddingHorizontal: 12,
-                paddingVertical: 8,
-                marginRight: 8,
-              }}
-            />
-            <Button title="Send" onPress={sendMessage} />
+            <Text
+              onPress={sendMessage}
+              style={{ color: "white", fontWeight: "600" }}
+            >
+              Send
+            </Text>
           </View>
         </View>
       </KeyboardAvoidingView>

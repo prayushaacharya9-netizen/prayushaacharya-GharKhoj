@@ -90,7 +90,7 @@ export default function ListingDetails() {
 
     const data = await response.json();
     router.push({
-      pathname: "/chat",
+      pathname: "/(tabs)/inbox",
       params: { conversationId: data.id },
     });
   };
@@ -141,7 +141,7 @@ export default function ListingDetails() {
             </Text>
           </Text>
           <Text style={styles.details}>Rent: ${listing.rent}/month</Text>
-          <Text style={{ fontSize: 15, fontWeight: "bold" }}>Located on</Text>
+          <Text style={{ fontSize: 15, fontWeight: "bold" }}>Located in</Text>
           <Text>
             <MaterialIcons name="location-on" size={16} color={"black"} />{" "}
             {listing.location}

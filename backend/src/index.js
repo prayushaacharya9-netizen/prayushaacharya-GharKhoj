@@ -63,6 +63,45 @@ async function startServer() {
     }
   });
 
+  app.post("/users/register", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader) {
+        return res.status(401).json({ error: "No token provided" });
+      }
+
+      const token = authHeader.split(" ")[1];
+      if (!token) {
+        return res.status(401).json({ error: "Invalid authorization header" });
+      }
+      const decoded = await admin.auth().verifyIdToken(token);
+      const firebaseUid = decoded.uid;
+      const email = decoded.email;
+      const name = req.body.name ?? null;
+
+      const result = await pool.query(
+        `
+        INSERT INTO users (id, name, email)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (id) DO NOTHING
+        RETURNING *
+        `,
+        [firebaseUid, name, email],
+      );
+
+      if (result.rows.length === 0) {
+        console.log("User already exists, no row inserted");
+        return res.status(200).json({ message: "User already registered" });
+      }
+
+      console.log("Inserted User row:", result.rows[0]);
+      res.status(201).json({ broker: result.rows[0] });
+    } catch (error) {
+      console.error("Error in /users/register:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.post("/listing", async (req, res) => {
     console.log("Received body:", req.body);
     console.log("Authorization header:", req.headers.authorization);
@@ -320,6 +359,16 @@ async function startServer() {
     } catch (err) {
       console.error("Fetch brokers error:", err);
       res.status(500).json({ error: "Failed to fetch brokers" });
+    }
+  });
+
+  app.get("/users/register", async (req, res) => {
+    try {
+      const result = await pool.query(`SELECT * FROM users`);
+      res.json(result.rows);
+    } catch (err) {
+      console.error("Fetch users error:", err);
+      res.status(500).json({ error: "Failed to fetch users" });
     }
   });
 
