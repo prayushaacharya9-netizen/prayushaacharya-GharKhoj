@@ -11,6 +11,26 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 async function startServer() {
+  async function sendPushNotification(tokens, title, body, data = {}) {
+    const messages = tokens.map((token) => ({
+      to: token,
+      sound: "default",
+      title,
+      body,
+      data,
+    }));
+
+    await fetch("https://exp.host/--/api/v2/push/send", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Accept-encoding": "gzip, deflate",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(messages),
+    });
+  }
+
   const result = await pool.query(
     "SELECT current_database(), current_schema();",
   );
@@ -39,15 +59,16 @@ async function startServer() {
       const firebaseUid = decoded.uid;
       const email = decoded.email;
       const name = req.body.name ?? null;
+      const NotificationToken = req.body.token ?? null;
 
       const result = await pool.query(
         `
-        INSERT INTO brokers (id, name, email)
-        VALUES ($1, $2, $3)
+        INSERT INTO brokers (id, name, email, token)
+        VALUES ($1, $2, $3, $4)
         ON CONFLICT (id) DO NOTHING
         RETURNING *
         `,
-        [firebaseUid, name, email],
+        [firebaseUid, name, email, NotificationToken],
       );
 
       if (result.rows.length === 0) {
@@ -78,15 +99,17 @@ async function startServer() {
       const firebaseUid = decoded.uid;
       const email = decoded.email;
       const name = req.body.name ?? null;
+      const NotificationToken = req.body.token ?? null;
+      console.log("NotificationToken:", NotificationToken);
 
       const result = await pool.query(
         `
-        INSERT INTO users (id, name, email)
-        VALUES ($1, $2, $3)
+        INSERT INTO users (id, name, email, token)
+        VALUES ($1, $2, $3, $4)
         ON CONFLICT (id) DO NOTHING
         RETURNING *
         `,
-        [firebaseUid, name, email],
+        [firebaseUid, name, email, NotificationToken],
       );
 
       if (result.rows.length === 0) {
@@ -149,6 +172,21 @@ async function startServer() {
         ],
       );
 
+      const users = await pool.query(`
+        SELECT token 
+        FROM users
+        WHERE token IS NOT NULL
+      `);
+
+      const tokens = users.rows.map((u) => u.token);
+
+      if (tokens.length > 0) {
+        await sendPushNotification(
+          tokens,
+          "New Listing Available",
+          `${title} has been added`,
+        );
+      }
       res.status(201).json(result.rows[0]);
     } catch (err) {
       console.error("Create listing error:", err);
@@ -168,6 +206,7 @@ async function startServer() {
       const decoded = await admin.auth().verifyIdToken(token);
 
       const user_uid = decoded.uid;
+
       const { broker_uid, listing_id } = req.body;
 
       if (!broker_uid || !listing_id) {
@@ -218,6 +257,61 @@ async function startServer() {
         [conversation_id, sender_uid, text],
       );
 
+      const interaction = await pool.query(
+        `
+        SELECT *
+        FROM conversations
+        WHERE id = $1
+      `,
+        [conversation_id],
+      );
+      let target_token;
+      let target_name;
+      const target_user = req.body.is_broker
+        ? interaction.rows[0].user_uid
+        : interaction.rows[0].broker_uid;
+      if (req.body.is_broker) {
+        target_token = await pool.query(
+          `
+          SELECT token
+          FROM users
+          WHERE id = $1
+        `,
+          [target_user],
+        );
+        target_name = await pool.query(
+          `
+          SELECT name
+          FROM brokers
+          WHERE id = $1
+        `,
+          [sender_uid],
+        );
+      } else {
+        target_token = await pool.query(
+          `
+        SELECT token
+        FROM brokers
+        WHERE id = $1
+      `,
+          [target_user],
+        );
+        target_name = await pool.query(
+          `
+          SELECT name
+          FROM users
+          WHERE id = $1
+        `,
+          [sender_uid],
+        );
+      }
+      const target_user_token = target_token?.rows[0]?.token;
+      console.log("target_user_token:", target_user_token);
+      await sendPushNotification(
+        [target_user_token],
+        "New Message",
+        `${target_name?.rows[0]?.name} sent you a message`,
+      );
       res.status(201).json(result.rows[0]);
     } catch (err) {
       console.error("Send message error:", err);

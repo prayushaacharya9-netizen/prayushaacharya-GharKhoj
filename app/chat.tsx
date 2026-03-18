@@ -53,6 +53,7 @@ export default function ChatScreen() {
       body: JSON.stringify({
         conversation_id: conversationId,
         text: input,
+        is_broker: isBroker,
       }),
     });
 
@@ -124,7 +125,7 @@ export default function ChatScreen() {
 
         <FlatList
           data={messages}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item, index) => item?.id ?? index.toString()}
           contentContainerStyle={{ padding: 12 }}
           style={{ flex: 1 }}
           renderItem={({ item }) => {
