@@ -1,1 +1,1 @@
-export const IP = "https://prayushaacharya-gharkhoj.onrender.com";
+export const IP = "prayushaacharya-gharkhoj.onrender.com";
