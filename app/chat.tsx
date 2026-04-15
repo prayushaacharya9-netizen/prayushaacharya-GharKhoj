@@ -44,7 +44,7 @@ export default function ChatScreen() {
 
     const token = await user.getIdToken();
 
-    const res = await fetch(`http://${IP}:3000/messages`, {
+    const res = await fetch(`http://${IP}/messages`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -70,7 +70,7 @@ export default function ChatScreen() {
 
     const fetchMessages = async () => {
       try {
-        const res = await fetch(`http://${IP}:3000/messages/${conversationId}`);
+        const res = await fetch(`http://${IP}/messages/${conversationId}`);
         const data = await res.json();
         setMessages(data);
       } catch (err) {

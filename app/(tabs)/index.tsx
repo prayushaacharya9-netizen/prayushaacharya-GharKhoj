@@ -277,7 +277,7 @@ export default function HomeScreen() {
       setIdToken(token);
       setIsLoading(false);
       const endpoint = isBroker ? "brokers/register" : "users/register";
-      fetch(`http://${IP}:3000/${endpoint}`, {
+      fetch(`http://${IP}/${endpoint}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -293,7 +293,7 @@ export default function HomeScreen() {
 
   useEffect(() => {
     const fetchListings = async () => {
-      const res = await fetch(`http://${IP}:3000/listings`);
+      const res = await fetch(`http://${IP}/listings`);
       const data = await res.json();
       setListings(data);
     };
@@ -309,7 +309,7 @@ export default function HomeScreen() {
       alert("Please select a location on the map");
       return;
     }
-    const listingRes: Response = await fetch(`http://${IP}:3000/listing`, {
+    const listingRes: Response = await fetch(`http://${IP}/listing`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -342,7 +342,7 @@ export default function HomeScreen() {
           type: "image/jpeg",
         } as any);
       });
-      const uploadRes = await fetch(`http://${IP}:3000/upload-multiple`, {
+      const uploadRes = await fetch(`http://${IP}/upload-multiple`, {
         method: "POST",
         body: formData,
       });
@@ -630,9 +630,7 @@ export default function HomeScreen() {
                   <HouseCard
                     key={listing.id}
                     id={listing.id}
-                    image={listing.images.map(
-                      (img) => `http://${IP}:3000${img}`,
-                    )}
+                    image={listing.images.map((img) => `http://${IP}${img}`)}
                     name={listing.title}
                     description={listing.description}
                     location={listing.location}

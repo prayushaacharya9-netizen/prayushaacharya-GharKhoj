@@ -54,7 +54,7 @@ export default function ListingDetails() {
     if (!id) return;
     const fetchListing = async () => {
       try {
-        const res = await fetch(`http://${IP}:3000/listings`);
+        const res = await fetch(`http://${IP}/listings`);
         const data: Listing[] = await res.json();
         const found = data.find((l) => l.id.toString() === id);
         if (found) setListing(found);
@@ -68,7 +68,7 @@ export default function ListingDetails() {
   useEffect(() => {
     if (!listing?.broker_id) return;
     const fetchBroker = async () => {
-      const res = await fetch(`http://${IP}:3000/brokers/register`);
+      const res = await fetch(`http://${IP}/brokers/register`);
       const data: Broker[] = await res.json();
       const found = data.find((b) => b.id === listing?.broker_id);
       if (found) setBroker(found);
@@ -79,7 +79,7 @@ export default function ListingDetails() {
   const handleChatPress = async () => {
     if (!user) return;
     const token = await user.getIdToken();
-    const response = await fetch(`http://${IP}:3000/conversations`, {
+    const response = await fetch(`http://${IP}/conversations`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -124,7 +124,7 @@ export default function ListingDetails() {
             scrollEventThrottle={16}
             renderItem={({ item }) => (
               <Image
-                source={{ uri: `http://${IP}:3000${item}` }}
+                source={{ uri: `http://${IP}${item}` }}
                 style={styles.carouselImage}
               />
             )}
