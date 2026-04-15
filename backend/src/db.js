@@ -1,12 +1,15 @@
 import dns from "dns";
-import dotenv from "dotenv";
 import pkg from "pg";
 
-// Force IPv4 DNS resolution globally
 dns.setDefaultResultOrder("ipv4first");
 
-dotenv.config();
 const { Pool } = pkg;
+
+// Log to confirm the variable is being read
+console.log(
+  "DATABASE_URL:",
+  process.env.DATABASE_URL ? "found ✅" : "missing ❌",
+);
 
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
