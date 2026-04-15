@@ -10,4 +10,3 @@ export const pool = new Pool({
   database: "gharkhoj",
   port: 5432,
 });
-
