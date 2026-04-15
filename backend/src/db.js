@@ -5,8 +5,8 @@ dotenv.config();
 const { Pool } = pkg;
 
 export const pool = new Pool({
-  user: "Dell",
-  host: "localhost",
-  database: "gharkhoj",
-  port: 5432,
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false,
+  },
 });
