@@ -1,5 +1,9 @@
+import dns from "dns";
 import dotenv from "dotenv";
 import pkg from "pg";
+
+// Force IPv4 DNS resolution globally
+dns.setDefaultResultOrder("ipv4first");
 
 dotenv.config();
 const { Pool } = pkg;
@@ -9,5 +13,4 @@ export const pool = new Pool({
   ssl: {
     rejectUnauthorized: false,
   },
-  family: 4,
 });

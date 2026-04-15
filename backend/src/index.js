@@ -31,11 +31,6 @@ async function startServer() {
     });
   }
 
-  const result = await pool.query(
-    "SELECT current_database(), current_schema();",
-  );
-  console.log(result.rows);
-
   app.use(cors());
   app.use(express.json());
   app.use("/uploads", express.static("uploads"));
