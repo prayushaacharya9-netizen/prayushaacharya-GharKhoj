@@ -1,9 +1,10 @@
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
+import multer from "multer";
 import { pool } from "./db.js";
 import admin from "./firebase.js";
-import { upload } from "./multer.js";
+import { supabase } from "./supabase.js";
 
 dotenv.config();
 
@@ -372,42 +373,55 @@ async function startServer() {
       res.status(500).json({ error: "Failed to fetch messages" });
     }
   });
+  const uploadMemory = multer({ storage: multer.memoryStorage() });
+  app.post(
+    "/upload-multiple",
+    uploadMemory.array("photos", 5),
+    async (req, res) => {
+      try {
+        const { listingId } = req.body;
 
-  app.post("/upload-multiple", upload.array("photos", 5), async (req, res) => {
-    try {
-      const { listingId } = req.body;
+        if (!listingId)
+          return res.status(400).json({ error: "listingId is required" });
+        if (!req.files || req.files.length === 0)
+          return res.status(400).json({ error: "No files uploaded" });
 
-      if (!listingId) {
-        return res.status(400).json({ error: "listingId is required" });
+        const uploadedUrls = [];
+
+        for (const file of req.files) {
+          const fileName = `listings/${listingId}/${Date.now()}-${file.originalname}`;
+
+          const { error } = await supabase.storage
+            .from("listing-images")
+            .upload(fileName, file.buffer, {
+              contentType: file.mimetype,
+              upsert: true,
+            });
+
+          if (error) throw error;
+
+          const { data } = supabase.storage
+            .from("listing-images")
+            .getPublicUrl(fileName);
+
+          uploadedUrls.push(data.publicUrl);
+
+          await pool.query(
+            `INSERT INTO listing_images (listing_id, image_url) VALUES ($1, $2)`,
+            [listingId, data.publicUrl],
+          );
+        }
+
+        res.status(201).json({
+          message: "Images uploaded successfully",
+          images: uploadedUrls,
+        });
+      } catch (err) {
+        console.error("Image upload error:", err);
+        res.status(500).json({ error: "Image upload failed" });
       }
-
-      if (!req.files || req.files.length === 0) {
-        return res.status(400).json({ error: "No files uploaded" });
-      }
-
-      const insertPromises = req.files.map((file) => {
-        const imageUrl = `/uploads/${file.filename}`;
-
-        return pool.query(
-          `
-            INSERT INTO listing_images (listing_id, image_url)
-            VALUES ($1, $2)
-            `,
-          [listingId, imageUrl],
-        );
-      });
-
-      await Promise.all(insertPromises);
-
-      res.status(201).json({
-        message: "Images uploaded successfully",
-        images: req.files.map((f) => `/uploads/${f.filename}`),
-      });
-    } catch (err) {
-      console.error("Image upload error:", err);
-      res.status(500).json({ error: "Image upload failed" });
-    }
-  });
+    },
+  );
 
   app.get("/listings", async (req, res) => {
     try {
