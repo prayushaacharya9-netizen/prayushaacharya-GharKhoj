@@ -630,7 +630,11 @@ export default function HomeScreen() {
                   <HouseCard
                     key={listing.id}
                     id={listing.id}
-                    image={listing.images.map((img) => `https://${IP}${img}`)}
+                    image={listing.images.map((img) => {
+                      return img.startsWith("https")
+                        ? img
+                        : `https://${IP}${img}`;
+                    })}
                     name={listing.title}
                     description={listing.description}
                     location={listing.location}
