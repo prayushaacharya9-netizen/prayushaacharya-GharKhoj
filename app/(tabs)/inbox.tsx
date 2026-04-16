@@ -123,7 +123,11 @@ export default function Inbox() {
     if (!target) return;
 
     const listing = listings.find((l) => l.id === Number(target.listing_id));
-    const ListImage = listing ? `https://${IP}${listing.images[0]}` : null;
+    const ListImage = listing?.images[0]
+      ? listing.images[0].startsWith("https")
+        ? listing.images[0]
+        : `https://${IP}${listing.images[0]}`
+      : null;
 
     const broker_list = broker.find((b) => b.id === target.broker_uid);
     const user_list = l_user.find((u) => u.id === target.user_uid);
@@ -168,8 +172,10 @@ export default function Inbox() {
               const listing = listings.find(
                 (l) => l.id === Number(item.listing_id),
               );
-              const ListImage = listing
-                ? `https://${IP}${listing.images[0]}`
+              const ListImage = listing?.images[0]
+                ? listing.images[0].startsWith("http")
+                  ? listing.images[0]
+                  : `https://${IP}${listing.images[0]}`
                 : null;
 
               const broker_list = broker.find((b) => b.id === item.broker_uid);

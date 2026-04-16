@@ -108,7 +108,11 @@ export default function ChatScreen() {
         >
           <Text style={{ fontWeight: "600", fontSize: 16 }}>{title}</Text>
           <Image
-            source={uri ? { uri: uri } : require("@/assets/images/icon.png")}
+            source={
+              uri
+                ? { uri: uri.startsWith("https") ? uri : `https://${IP}${uri}` }
+                : require("@/assets/images/icon.png")
+            }
             style={{
               width: 70,
               height: 70,

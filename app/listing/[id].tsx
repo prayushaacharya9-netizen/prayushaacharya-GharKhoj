@@ -124,7 +124,9 @@ export default function ListingDetails() {
             scrollEventThrottle={16}
             renderItem={({ item }) => (
               <Image
-                source={{ uri: `https://${IP}${item}` }}
+                source={{
+                  uri: item.startsWith("https") ? item : `https://${IP}${item}`,
+                }}
                 style={styles.carouselImage}
               />
             )}
